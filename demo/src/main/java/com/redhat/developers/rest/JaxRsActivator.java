@@ -27,7 +27,7 @@ public class JaxRsActivator extends Application {
         beanConfig.setLicense("Apache 2.0");
         beanConfig.setLicenseUrl("http://www.apache.org/licenses/LICENSE-2.0.html");
         beanConfig.setContact("developer@redhat.com");
-        beanConfig.setBasePath("/api");
+        beanConfig.setBasePath("/demo/api");
         beanConfig.setPrettyPrint(true);
         beanConfig.setScan(true);
 	}
