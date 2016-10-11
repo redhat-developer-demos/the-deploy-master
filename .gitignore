@@ -1,1 +1,4 @@
 cookies.txt
+RemoteSystemsTempFiles/
+.*
+*/target/*
