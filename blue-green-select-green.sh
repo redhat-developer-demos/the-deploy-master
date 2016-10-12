@@ -1,2 +1,2 @@
 #!/bin/bash
-oc patch svc/bonjour -p '{"spec":{"selector":{"app":"bonjour","deploymentconfig":"bonjour"}}}'
+oc patch route/demo -p '{"spec": {"to": {"name": "demo" }}}'
