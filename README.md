@@ -10,8 +10,6 @@ Start it with the following command:
     oc cluster up --create-machine=true   \
                 --use-existing-config   \
                 --host-data-dir=/mydata \
-                --image=registry.access.redhat.com/openshift3/ose \
-                --version=latest
 
 After that, execute `./setup.sh` and wait (approximately 20 minutes) for the demo application to be deployed.
 
