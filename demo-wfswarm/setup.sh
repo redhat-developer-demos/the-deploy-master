@@ -10,9 +10,9 @@ sleep 5
 oc logs -f bc/wildflyswarm-10-centos7-build
 
 #Create the application GREEN
-oc new-app --name demo wildflyswarm-10-centos7~https://github.com/redhat-developer-demos/the-deploy-master --context-dir=/demo-wfswarm
+oc new-app --name demo -e SWARM_JVM_ARGS=-Xmx512m wildflyswarm-10-centos7~https://github.com/redhat-developer-demos/the-deploy-master --context-dir=/demo-wfswarm
 #Create the application BLUE
-oc new-app --name demo-blue wildflyswarm-10-centos7~https://github.com/redhat-developer-demos/the-deploy-master --context-dir=/demo-wfswarm
+oc new-app --name demo-blue -e SWARM_JVM_ARGS=-Xmx512m wildflyswarm-10-centos7~https://github.com/redhat-developer-demos/the-deploy-master --context-dir=/demo-wfswarm
 
 #Expose the route GREEN
 oc expose svc demo --hostname=demo.$(docker-machine ip openshift).nip.io 
