@@ -8,9 +8,9 @@ oc create -f https://raw.githubusercontent.com/jboss-openshift/application-templ
 until oc get is jboss-eap70-openshift|grep 1.4; do echo "Waiting ImageStream download..."; sleep 5; done
 
 #Create the application GREEN
-oc new-app --name demo jboss-eap70-openshift~https://github.com/redhat-developer-demos/the-deploy-master --context-dir=/demo-eap
+oc new-app --name demo -e SWARM_JVM_ARGS=-Xmx512m jboss-eap70-openshift~https://github.com/redhat-developer-demos/the-deploy-master --context-dir=/demo-eap
 #Create the application BLUE
-oc new-app --name demo-blue jboss-eap70-openshift~https://github.com/redhat-developer-demos/the-deploy-master --context-dir=/demo-eap
+oc new-app --name demo-blue -e SWARM_JVM_ARGS=-Xmx512m jboss-eap70-openshift~https://github.com/redhat-developer-demos/the-deploy-master --context-dir=/demo-eap
 
 #Expose the route GREEN
 oc expose svc demo --hostname=demo.$(docker-machine ip openshift).nip.io 
