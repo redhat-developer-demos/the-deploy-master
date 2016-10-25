@@ -5,12 +5,14 @@ echo "Log as developer/developer"
 
 #Download xPaaS ImageStream
 oc create -f https://raw.githubusercontent.com/wildfly-swarm/sti-wildflyswarm/master/1.0/wildflyswarm-sti-all.json
+echo "Waiting 5 seconds...."
+sleep 5
 oc logs -f bc/wildflyswarm-10-centos7-build
 
 #Create the application GREEN
-oc new-app --name demo jboss-eap70-openshift~https://github.com/redhat-developer-demos/the-deploy-master --context-dir=/demo-eap
+oc new-app --name demo wildflyswarm-10-centos7~https://github.com/redhat-developer-demos/the-deploy-master --context-dir=/demo-wfswarm
 #Create the application BLUE
-oc new-app --name demo-blue jboss-eap70-openshift~https://github.com/redhat-developer-demos/the-deploy-master --context-dir=/demo-eap
+oc new-app --name demo-blue wildflyswarm-10-centos7~https://github.com/redhat-developer-demos/the-deploy-master --context-dir=/demo-wfswarm
 
 #Expose the route GREEN
 oc expose svc demo --hostname=demo.$(docker-machine ip openshift).nip.io 
@@ -20,21 +22,10 @@ oc patch bc/demo -p '{"spec":{"strategy":{"type":"Source","sourceStrategy":{"inc
 #Enable incremental builds BLUE
 oc patch bc/demo-blue -p '{"spec":{"strategy":{"type":"Source","sourceStrategy":{"incremental":true}}}}'
 
-
-#Enable cluster GREEN
-oc policy add-role-to-user view system:serviceaccount:$(oc project -q):default -n $(oc project -q)
-oc patch dc/demo -p '{"spec":{"template":{"spec":{"containers":[{"name":"demo","ports":[{"containerPort":8888,"protocol":"TCP","name":"ping"}]}]}}}}'
-oc env dc/demo -e OPENSHIFT_KUBE_PING_NAMESPACE=myproject  OPENSHIFT_KUBE_PING_LABELS=app=demo
-
-#Enable cluster BLUE
-oc patch dc/demo-blue -p '{"spec":{"template":{"spec":{"containers":[{"name":"demo-blue","ports":[{"containerPort":8888,"protocol":"TCP","name":"ping"}]}]}}}}'
-oc env dc/demo-blue -e OPENSHIFT_KUBE_PING_NAMESPACE=myproject  OPENSHIFT_KUBE_PING_LABELS=app=demo
-
-
 #Enable readiness probe GREEN
-oc set probe dc/demo --readiness --get-url=http://:8080/demo/api/session/health
+oc set probe dc/demo --readiness --get-url=http://:8080/api/health
 #Enable readiness probe BLUE
-oc set probe dc/demo-blue --readiness --get-url=http://:8080/demo/api/session/health
+oc set probe dc/demo-blue --readiness --get-url=http://:8080/api/health
 
 #Scale GREEN application
 oc scale dc/demo --replicas=3

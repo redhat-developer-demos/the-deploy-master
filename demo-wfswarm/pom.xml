@@ -124,6 +124,9 @@
 						</goals>
 					</execution>
 				</executions>
+				<configuration>
+					<jvmArguments>-Xmx512m</jvmArguments>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
