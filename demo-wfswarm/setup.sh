@@ -3,6 +3,11 @@
 open https://$(docker-machine ip openshift):8443
 echo "Log as developer/developer"
 
+#Login and prepare the project
+oc login --insecure-skip-tls-verify=true -u developer -p developer $(docker-machine ip openshift):8443
+oc new-project deploy-master
+
+
 #Download xPaaS ImageStream
 oc create -f https://raw.githubusercontent.com/wildfly-swarm/sti-wildflyswarm/master/1.0/wildflyswarm-sti-all.json
 echo "Waiting 5 seconds...."

@@ -19,7 +19,7 @@ open https://$(docker-machine ip openshift):8443
 echo "Log as developer/developer"
 
 #Login and prepare the project
-oc login --insecure-skip-tls-verify=true -u openshift-dev -p devel 10.1.2.2
+oc login --insecure-skip-tls-verify=true -u developer -p developer $(docker-machine ip openshift):8443
 oc new-project deploy-master
 
 #Build the project locally

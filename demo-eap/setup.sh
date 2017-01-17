@@ -3,6 +3,11 @@
 open https://$(docker-machine ip openshift):8443
 echo "Log as developer/developer"
 
+#Login and prepare the project
+oc login --insecure-skip-tls-verify=true -u developer -p developer $(docker-machine ip openshift):8443
+oc new-project deploy-master
+
+
 #Download xPaaS ImageStream
 oc create -f https://raw.githubusercontent.com/jboss-openshift/application-templates/master/jboss-image-streams.json
 until oc get is jboss-eap70-openshift|grep 1.4; do echo "Waiting ImageStream download..."; sleep 5; done
