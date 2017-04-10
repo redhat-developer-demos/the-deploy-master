@@ -1,0 +1,1 @@
+sudo haproxy -f haproxy.cfg  -p /var/run/haproxy.pid -D
