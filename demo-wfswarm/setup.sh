@@ -1,10 +1,10 @@
 #!/bin/bash
 #Opening Openshift console
-open https://$(docker-machine ip openshift):8443
+open https://$OPENSHIFT_IP:8443
 echo "Log as developer/developer"
 
 #Login and prepare the project
-oc login --insecure-skip-tls-verify=true -u developer -p developer $(docker-machine ip openshift):8443
+oc login --insecure-skip-tls-verify=true -u developer -p developer $OPENSHIFT_IP:8443
 oc new-project deploy-master
 
 
@@ -20,7 +20,7 @@ oc new-app --name demo -e SWARM_JVM_ARGS=-Xmx512m wildflyswarm-10-centos7~https:
 oc new-app --name demo-blue -e SWARM_JVM_ARGS=-Xmx512m wildflyswarm-10-centos7~https://github.com/redhat-developer-demos/the-deploy-master --context-dir=/demo-wfswarm
 
 #Expose the route GREEN
-oc expose svc demo --hostname=demo.$(docker-machine ip openshift).nip.io 
+oc expose svc demo --hostname=demo.$OPENSHIFT_IP.nip.io 
 
 #Enable incremental builds GREEN
 oc patch bc/demo -p '{"spec":{"strategy":{"type":"Source","sourceStrategy":{"incremental":true}}}}'

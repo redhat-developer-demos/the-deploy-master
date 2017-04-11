@@ -1,0 +1,1 @@
+sudo kill -9 $(cat /var/run/haproxy.pid)

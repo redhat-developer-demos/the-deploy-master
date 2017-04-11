@@ -15,11 +15,11 @@
 # limitations under the License.
 
 #Opening Openshift console
-open https://$(docker-machine ip openshift):8443
+open https://$OPENSHIFT_IP:8443
 echo "Log as developer/developer"
 
 #Login and prepare the project
-oc login --insecure-skip-tls-verify=true -u developer -p developer $(docker-machine ip openshift):8443
+oc login --insecure-skip-tls-verify=true -u developer -p developer $OPENSHIFT_IP:8443
 oc new-project deploy-master
 
 #Build the project locally
@@ -37,7 +37,7 @@ oc start-build demo-blue --from-dir=. --follow
 oc new-app demo-blue
 
 #Expose the route GREEN
-oc expose svc demo --hostname=demo.$(docker-machine ip openshift).nip.io 
+oc expose svc demo --hostname=demo.$OPENSHIFT_IP.nip.io 
 
 #Enable readiness probe GREEN
 oc set probe dc/demo --readiness --get-url=http://:8080/api/health

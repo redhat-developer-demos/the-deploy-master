@@ -5,11 +5,9 @@ Slides are available at http://bit.ly/thedeploymaster
 
 This demo uses OpenShift 3
 
-Start it with the following command:
+STo use the scripts, specify the OPENSHIFT_IP environment variable.
 
-    oc cluster up --create-machine=true   \
-                --use-existing-config   \
-                --host-data-dir=/mydata 
+Example: export OPENSHIFT_IP=35.185.41.87;
 
 After that, execute `./setup.sh` and wait (approximately 20 minutes) for the demo application to be deployed.
 
