@@ -45,7 +45,7 @@ node("maven") {
         sh "oc project deploy-master"
         sh "oc policy add-role-to-user system:image-puller system:serviceaccount:deploy-master:default -n deploy-master"
         sh "oc tag deploy-master-dev/demo:latest deploy-master/demo:${env.BUILD_NUMBER}"
-        sh "oc new-app -n deploy-master --name demo-${env.BUILD_NUMBER} demo:${env.BUILD_NUMBER}"
+        sh "oc new-app -n deploy-master --name demo-${env.BUILD_NUMBER} -e OPENSHIFT_KUBE_PING_NAMESPACE=$(oc project -q) -e OPENSHIFT_KUBE_PING_LABELS="demo=deploy-master" -l demo=deploy-master demo:${env.BUILD_NUMBER}" 
     }
     
     stage ("PROD - Canary deploy") {
