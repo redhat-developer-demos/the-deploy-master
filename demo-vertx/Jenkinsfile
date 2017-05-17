@@ -1,38 +1,57 @@
 node("maven") {
     
-    stage("Checkout") {
+    stage("Git Checkout") {
         echo "Checking out git repository"
         checkout scm
     }
-
-    stage("Build project with Maven") {
+    
+    stage("Maven build") {
         echo 'Building project'
-        sh "mvn package"
+        sh "mvn -f demo-vertx/pom.xml package"
     }
 
-    stage("Build image and deploy in Dev") {
+    stage("DEV - Image build") {
         echo 'Building docker image and deploying to Dev'
-        buildApp('deploy-master-dev', "demo")
+        sh "oc project deploy-master-dev"
+        sh "oc new-build -n deploy-master-dev --binary --name=demo -l app=demo || echo 'Build exists'"
+        sh "oc start-build demo -n deploy-master-dev --from-dir=demo-vertx --follow"
         echo "This is the build number: ${env.BUILD_NUMBER}"
+        sh "oc new-app demo -n deploy-master-dev  || echo 'Aplication already Exists'"
+        sh "oc expose service demo -n deploy-master-dev || echo 'Service already exposed'"
+        sh "oc set probe dc/demo -n deploy-master-dev --readiness --get-url=http://:8080/api/health"
     }
 
     stage("Automated tests") {
         echo 'This stage simulates automated tests'
-        sh "mvn -B -Dmaven.test.failure.ignore verify"
+        sh "mvn -f demo-vertx/pom.xml -B -Dmaven.test.failure.ignore verify"
     }
 
-    stage("Deploy to QA") {
+    stage("QA - App Deploy") {
         echo 'Deploying to QA'
-        promoteImage('deploy-master-dev', 'deploy-master-dev', 'demo', 'latest')
+        sh "oc project deploy-master-qa"
+        sh "oc policy add-role-to-user system:image-puller system:serviceaccount:deploy-master-qa:default -n deploy-master-dev"
+        sh "oc tag deploy-master-dev/demo:latest deploy-master-qa/demo:latest"
+        sh "oc new-app demo -n deploy-master-qa  || echo 'Aplication already Exists'"
+        sh "oc expose service demo -n deploy-master-qa || echo 'Service already exposed'"
+        sh "oc set probe dc/demo -n deploy-master-qa  --readiness --get-url=http://:8080/api/health"
     }
 
-    stage("Wait for approval") {
+    stage("Approve to PROD") {
         input 'Approve to production?'
     }
 
-    stage("Deploy to production") {
+    stage("PROD - App Deploy") {
         echo 'Deploying to production'
-        promoteImage('deploy-master-dev', 'deploy-master', 'aloha', env.BUILD_NUMBER)
-        canaryDeploy('deploy-master-dev', 'demo', env.BUILD_NUMBER)
+        sh "oc project deploy-master"
+        sh "oc policy add-role-to-user system:image-puller system:serviceaccount:deploy-master:default -n deploy-master"
+        sh "oc tag deploy-master-dev/demo:latest deploy-master/demo:${env.BUILD_NUMBER}"
+        sh "oc new-app -n deploy-master --name demo-${env.BUILD_NUMBER} demo:${env.BUILD_NUMBER}"
+    }
+    
+    stage ("PROD - Canary deploy") {
+        sh "oc project deploy-master"
+        sh "oc set probe dc/demo -n deploy-master --readiness --get-url=http://:8080/api/health"
+        sh "oc patch route/demo -n deploy-master  -p '{\"spec\": {\"to\": {\"name\": \"demo\" }}}'"
+        sh "oc patch route demo -n deploy-master  -p '{\"spec\":{\"alternateBackends\":[{\"kind\":\"Service\", \"name\":\"demo-${env.BUILD_NUMBER}\", \"weight\": 1}]}}'"
     }
 }
