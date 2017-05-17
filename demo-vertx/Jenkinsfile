@@ -1,0 +1,40 @@
+node () {
+
+    @Library('github.com/redhat-helloworld-msa/jenkins-library@master')
+    
+    stage ('Git checkout'){
+        echo 'Checking out git repository'
+        checkout scm
+    }
+
+    stage ('Build project with Maven'){
+        echo 'Building project'
+        sh "mvn package"
+    }
+
+    stage ('Build image and deploy in Dev'){
+        echo 'Building docker image and deploying to Dev'
+        buildApp('deploy-master-dev', "demo")
+        echo "This is the build number: ${env.BUILD_NUMBER}"
+    }
+
+    stage ('Automated tests'){
+        echo 'This stage simulates automated tests'
+        sh "mvn -B -Dmaven.test.failure.ignore verify"
+    }
+
+    stage ('Deploy to QA'){
+        echo 'Deploying to QA'
+        promoteImage('deploy-master-dev', 'deploy-master-dev', 'demo', 'latest')
+    }
+
+    stage ('Wait for approval'){
+        input 'Approve to production?'
+    }
+
+    stage ('Deploy to production'){
+        echo 'Deploying to production'
+        promoteImage('deploy-master-dev', 'deploy-master', 'aloha', env.BUILD_NUMBER)
+        canaryDeploy('deploy-master-dev', 'demo', env.BUILD_NUMBER)
+    }
+}
