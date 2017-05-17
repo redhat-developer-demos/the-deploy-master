@@ -20,7 +20,10 @@ echo "Log as developer/developer"
 
 #Login and prepare the project
 oc login --insecure-skip-tls-verify=true -u developer -p developer $OPENSHIFT_IP:8443
-oc new-project deploy-master
+oc new-project deploy-master || oc project deploy-master
+
+#Setup for infinispan
+oc policy add-role-to-user view system:serviceaccount:$(oc project -q):default -n $(oc project -q)
 
 #Build the project locally
 mvn package
@@ -28,13 +31,13 @@ mvn package
 #Create the application GREEN
 oc new-build --binary --name=demo
 oc start-build demo --from-dir=. --follow
-oc new-app demo
+oc new-app demo -e OPENSHIFT_KUBE_PING_NAMESPACE=$(oc project -q) -e OPENSHIFT_KUBE_PING_LABELS="demo=deploy-master" -l demo=deploy-master
 oc set probe dc/demo --readiness --get-url=http://:8080/api/health
 
 #Create the application BLUE
 oc new-build --binary --name=demo-blue
 oc start-build demo-blue --from-dir=. --follow
-oc new-app demo-blue
+oc new-app demo-blue -e OPENSHIFT_KUBE_PING_NAMESPACE=$(oc project -q)  -e OPENSHIFT_KUBE_PING_LABELS="demo=deploy-master" -l demo=deploy-master
 
 #Expose the route GREEN
 oc expose svc demo --hostname=demo.$OPENSHIFT_IP.nip.io 

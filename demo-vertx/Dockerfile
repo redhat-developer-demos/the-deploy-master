@@ -17,9 +17,9 @@ FROM fabric8/java-jboss-openjdk8-jdk:1.2.5
 
 ENV JAVA_APP_JAR helloworld-service-fat.jar
 ENV AB_OFF true
-ENV JAVA_OPTIONS -Xmx256m
+ENV JAVA_OPTIONS -Xmx256m -Djava.net.preferIPv4Stack=true
 
 ADD target/helloworld-service-fat.jar /deployments/
 
 EXPOSE 8080
-
+EXPOSE 8888
