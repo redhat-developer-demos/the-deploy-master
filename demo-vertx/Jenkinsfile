@@ -1,8 +1,8 @@
-node ("maven") {
+node ('maven') {
 
-    @Library("github.com/redhat-helloworld-msa/jenkins-library@master")
+    @Library('github.com/redhat-helloworld-msa/jenkins-library@master')
     
-    stage ("Git checkout") {
+    stage('Git checkout') {
         echo "Checking out git repository"
         checkout scm
     }
