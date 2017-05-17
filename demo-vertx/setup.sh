@@ -22,8 +22,10 @@ echo "Log as developer/developer"
 oc login --insecure-skip-tls-verify=true -u developer -p developer $OPENSHIFT_IP:8443
 oc new-project deploy-master || oc project deploy-master
 
-#Setup for infinispan
-oc policy add-role-to-user view system:serviceaccount:$(oc project -q):default -n $(oc project -q)
+#Create a pipeline
+echo "Creating a pipeline"
+oc create -f pipeline.yml
+
 
 #Build the project locally
 mvn package
@@ -49,3 +51,22 @@ oc set probe dc/demo-blue --readiness --get-url=http://:8080/api/health
 
 #Scale GREEN application
 oc scale dc/demo --replicas=3
+
+#Setup Jenkins credentials
+oc login -u system:admin
+oc new-project deploy-master-dev
+oc policy add-role-to-user admin developer -n deploy-master-dev
+oc new-project deploy-master-qa
+oc policy add-role-to-user admin developer -n deploy-master-qa
+echo "Giving Jenkins SA a cluster-admin permission"
+oc adm policy add-cluster-role-to-user cluster-admin system:serviceaccount:deploy-master:jenkins -n deploy-master
+oc login -u developer -p developer
+
+#Start the pipeline
+oc start-build deploy-master-pipeline
+
+#Setup for infinispan
+oc policy add-role-to-user view system:serviceaccount:deploy-master:default -n deploy-master
+
+#Return to PROD project
+oc project deploy-master

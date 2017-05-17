@@ -1,0 +1,12 @@
+kind: "BuildConfig"
+apiVersion: "v1"
+metadata:
+  name: "deploy-master-pipeline"
+spec:
+  source:
+    contextDir: "demo-vertx"
+    git:
+      uri: "https://github.com/redhat-developer-demos/the-deploy-master"
+  strategy:
+    jenkinsPipelineStrategy:
+      jenkinsfilePath: "Jenkinsfile"
