@@ -41,10 +41,18 @@ public class HelloworldVerticle extends AbstractVerticle {
 	private static final String version = "1.0";
 	private Logger logger = LoggerFactory.getLogger(HelloworldVerticle.class);
 	private final String hostname = System.getenv().getOrDefault("HOSTNAME", "unknown");
-	private static Cache<String, String> cacheInstance;
 
 	@Override
 	public void start() throws Exception {
+
+		vertx.executeBlocking(future -> {
+			// Force start of Infinispan
+			CacheInstance.getCache();
+			future.complete();
+		}, ar -> {
+			ar.result();
+		});
+
 		Router router = Router.router(vertx);
 
 		// Config CORS
@@ -63,7 +71,7 @@ public class HelloworldVerticle extends AbstractVerticle {
 			if (name == null) {
 				ctx.response().end("Missing name parameter");
 			} else {
-				Cache<String, String> cache = getConfiguredCache();
+				Cache<String, String> cache = CacheInstance.getCache();
 				int currentSize = cache.keySet().size();
 				// using the size as a way to provide uniqueness to keys
 				String key = currentSize + "_" + hostname;
@@ -74,14 +82,14 @@ public class HelloworldVerticle extends AbstractVerticle {
 
 		// Clear
 		router.get("/api/clearstuff").blockingHandler(ctx -> {
-			Cache<String, String> cache = getConfiguredCache();
+			Cache<String, String> cache = CacheInstance.getCache();
 			cache.clear();
 			ctx.response().end("Cleared");
 		});
 
 		// Get Stuff
 		router.get("/api/getstuff").blockingHandler(ctx -> {
-			Cache<String, String> cache = getConfiguredCache();
+			Cache<String, String> cache = CacheInstance.getCache();
 			StringBuilder sb = new StringBuilder();
 			Set<String> keySet = cache.keySet();
 			sb.append("VERSION " + version + " - " + hostname + " has values: ");
@@ -99,36 +107,6 @@ public class HelloworldVerticle extends AbstractVerticle {
 			ctx.response().end("I'm ok");
 		});
 		vertx.createHttpServer().requestHandler(router::accept).listen(8080);
-	}
-
-	private Cache<String, String> getConfiguredCache() {
-		if (cacheInstance == null) {
-			GlobalConfiguration gc = GlobalConfigurationBuilder.defaultClusteredBuilder()
-					// Use this line for testing in Kubernetes. But it requires
-					// additional configuration:
-					// oc policy add-role-to-user view
-					// system:serviceaccount:$(oc
-					// project -q):default -n $(oc project -q)
-					// And setting OPENSHIFT_KUBE_PING_NAMESPACE env variable to
-					// your namespace
-					.transport().defaultTransport()
-					.addProperty("configurationFile", "default-configs/default-jgroups-kubernetes.xml")
-
-					// Or use, multicast stack to simplify local testing:
-					// .transport().defaultTransport().addProperty("configurationFile",
-					// "default-configs/default-jgroups-udp.xml")
-					.build();
-
-			EmbeddedCacheManager manager = new DefaultCacheManager(gc);
-
-			// And here are per-cache configuration, e.g. eviction, replication
-			// scheme etc.
-			ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
-			configurationBuilder.clustering().cacheMode(CacheMode.REPL_ASYNC);
-			manager.defineConfiguration("default", configurationBuilder.build());
-			cacheInstance = manager.getCache("default");
-		}
-		return cacheInstance;
 	}
 
 	private String hello(String name) {
