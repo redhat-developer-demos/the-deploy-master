@@ -54,10 +54,6 @@ oc scale dc/demo --replicas=3
 
 #Setup Jenkins credentials
 oc login -u system:admin
-oc new-project deploy-master-dev
-oc policy add-role-to-user admin developer -n deploy-master-dev
-oc new-project deploy-master-qa
-oc policy add-role-to-user admin developer -n deploy-master-qa
 echo "Giving Jenkins SA a cluster-admin permission"
 oc adm policy add-cluster-role-to-user cluster-admin system:serviceaccount:deploy-master:jenkins -n deploy-master
 oc login -u developer -p developer
