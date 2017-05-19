@@ -56,6 +56,10 @@ oc scale dc/demo --replicas=3
 oc login -u system:admin
 echo "Giving Jenkins SA a cluster-admin permission"
 oc adm policy add-cluster-role-to-user cluster-admin system:serviceaccount:deploy-master:jenkins -n deploy-master
+
+#Setup for infinispan
+oc policy add-role-to-user view system:serviceaccount:deploy-master:default -n deploy-master
+
 oc login -u developer -p developer
 
 #Return to PROD project
@@ -64,6 +68,4 @@ oc project deploy-master
 #Start the pipeline
 oc start-build deploy-master-pipeline
 
-#Setup for infinispan
-oc policy add-role-to-user view system:serviceaccount:deploy-master:default -n deploy-master
 
