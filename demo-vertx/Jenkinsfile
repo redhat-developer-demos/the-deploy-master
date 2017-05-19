@@ -13,6 +13,7 @@ node("maven") {
     stage("DEV - Image build") {
         echo 'Building docker image and deploying to Dev'
         sh "oc new-project deploy-master-dev || echo 'Project exists'"
+        sh "oc policy add-role-to-user admin developer -n deploy-master-dev"
         sh "oc project deploy-master-dev"
         sh "oc new-build -n deploy-master-dev --binary --name=demo -l app=demo || echo 'Build exists'"
         sh "oc start-build demo -n deploy-master-dev --from-dir=demo-vertx --follow"
@@ -30,6 +31,7 @@ node("maven") {
     stage("QA - App Deploy") {
         echo 'Deploying to QA'
         sh "oc new-project deploy-master-qa || echo 'Project exists'"
+        sh "oc policy add-role-to-user admin developer -n deploy-master-qa"
         sh "oc project deploy-master-qa"
         sh "oc policy add-role-to-user system:image-puller system:serviceaccount:deploy-master-qa:default -n deploy-master-dev"
         sh "oc tag deploy-master-dev/demo:latest deploy-master-qa/demo:latest"
