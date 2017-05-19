@@ -1,63 +1,66 @@
-node("maven") {
+podTemplate(inheritFrom: "maven", label: "myJenkins", cloud: "openshift", volumes: [persistentVolumeClaim(claimName: "m2repo", mountPath: "/tmp/.m2")]) {
+
+    node("myJenkins") {
     
-    stage("Git Checkout") {
-        echo "Checking out git repository"
-        checkout scm
-    }
-    
-    stage("Maven build") {
-        echo 'Building project'
-        sh "mvn -f demo-vertx/pom.xml package"
-    }
+        stage("Git Checkout") {
+            echo "Checking out git repository"
+            checkout scm
+        }
 
-    stage("DEV - Image build") {
-        echo 'Building docker image and deploying to Dev'
-        sh "oc new-project deploy-master-dev || echo 'Project exists'"
-        sh "oc policy add-role-to-user admin developer -n deploy-master-dev"
-        sh "oc project deploy-master-dev"
-        sh "oc new-build -n deploy-master-dev --binary --name=demo -l app=demo || echo 'Build exists'"
-        sh "oc start-build demo -n deploy-master-dev --from-dir=demo-vertx --follow"
-        echo "This is the build number: ${env.BUILD_NUMBER}"
-        sh "oc new-app demo -n deploy-master-dev  || echo 'Aplication already Exists'"
-        sh "oc expose service demo -n deploy-master-dev || echo 'Service already exposed'"
-        sh "oc set probe dc/demo -n deploy-master-dev --readiness --get-url=http://:8080/api/health"
-    }
+        stage("Maven build") {
+            echo 'Building project'
+            sh "mvn -f demo-vertx/pom.xml package"
+        }
 
-    stage("Automated tests") {
-        echo 'This stage simulates automated tests'
-        sh "mvn -f demo-vertx/pom.xml -B -Dmaven.test.failure.ignore verify"
-    }
+        stage("DEV - Image build") {
+            echo 'Building docker image and deploying to Dev'
+            sh "oc new-project deploy-master-dev || echo 'Project exists'"
+            sh "oc policy add-role-to-user admin developer -n deploy-master-dev"
+            sh "oc project deploy-master-dev"
+            sh "oc new-build -n deploy-master-dev --binary --name=demo -l app=demo || echo 'Build exists'"
+            sh "oc start-build demo -n deploy-master-dev --from-dir=demo-vertx --follow"
+            echo "This is the build number: ${env.BUILD_NUMBER}"
+            sh "oc new-app demo -n deploy-master-dev  || echo 'Aplication already Exists'"
+            sh "oc expose service demo -n deploy-master-dev || echo 'Service already exposed'"
+            sh "oc set probe dc/demo -n deploy-master-dev --readiness --get-url=http://:8080/api/health"
+        }
 
-    stage("QA - App Deploy") {
-        echo 'Deploying to QA'
-        sh "oc new-project deploy-master-qa || echo 'Project exists'"
-        sh "oc policy add-role-to-user admin developer -n deploy-master-qa"
-        sh "oc project deploy-master-qa"
-        sh "oc policy add-role-to-user system:image-puller system:serviceaccount:deploy-master-qa:default -n deploy-master-dev"
-        sh "oc tag deploy-master-dev/demo:latest deploy-master-qa/demo:latest"
-        sh "oc new-app demo -n deploy-master-qa  || echo 'Aplication already Exists'"
-        sh "oc expose service demo -n deploy-master-qa || echo 'Service already exposed'"
-        sh "oc set probe dc/demo -n deploy-master-qa  --readiness --get-url=http://:8080/api/health"
-    }
+        stage("Automated tests") {
+            echo 'This stage simulates automated tests'
+            sh "mvn -f demo-vertx/pom.xml -B -Dmaven.test.failure.ignore verify"
+        }
 
-    stage("Approve to PROD") {
-        input 'Approve to production?'
-    }
+        stage("QA - App Deploy") {
+            echo 'Deploying to QA'
+            sh "oc new-project deploy-master-qa || echo 'Project exists'"
+            sh "oc policy add-role-to-user admin developer -n deploy-master-qa"
+            sh "oc project deploy-master-qa"
+            sh "oc policy add-role-to-user system:image-puller system:serviceaccount:deploy-master-qa:default -n deploy-master-dev"
+            sh "oc tag deploy-master-dev/demo:latest deploy-master-qa/demo:latest"
+            sh "oc new-app demo -n deploy-master-qa  || echo 'Aplication already Exists'"
+            sh "oc expose service demo -n deploy-master-qa || echo 'Service already exposed'"
+            sh "oc set probe dc/demo -n deploy-master-qa  --readiness --get-url=http://:8080/api/health"
+        }
 
-    stage("PROD - App Deploy") {
-        echo 'Deploying to production'
-        sh "oc new-project deploy-master || echo 'Project exists'"
-        sh "oc project deploy-master"
-        sh "oc policy add-role-to-user system:image-puller system:serviceaccount:deploy-master:default -n deploy-master"
-        sh "oc tag deploy-master-dev/demo:latest deploy-master/demo:${env.BUILD_NUMBER}"
-        sh "oc new-app -n deploy-master --name demo-${env.BUILD_NUMBER} -e OPENSHIFT_KUBE_PING_NAMESPACE=deploy-master -e OPENSHIFT_KUBE_PING_LABELS=\"demo=deploy-master\" -l demo=deploy-master demo:${env.BUILD_NUMBER}" 
+        stage("Approve to PROD") {
+            input 'Approve to production?'
+        }
+
+        stage("PROD - App Deploy") {
+            echo 'Deploying to production'
+            sh "oc new-project deploy-master || echo 'Project exists'"
+            sh "oc project deploy-master"
+            sh "oc policy add-role-to-user system:image-puller system:serviceaccount:deploy-master:default -n deploy-master"
+            sh "oc tag deploy-master-dev/demo:latest deploy-master/demo:${env.BUILD_NUMBER}"
+            sh "oc new-app -n deploy-master --name demo-${env.BUILD_NUMBER} -e OPENSHIFT_KUBE_PING_NAMESPACE=deploy-master -e OPENSHIFT_KUBE_PING_LABELS=\"demo=deploy-master\" -l demo=deploy-master demo:${env.BUILD_NUMBER}" 
+        }
+
+        stage ("PROD - Canary deploy") {
+            sh "oc new-project deploy-master || echo 'Project exists'"
+            sh "oc project deploy-master"
+            sh "oc set probe dc/demo -n deploy-master --readiness --get-url=http://:8080/api/health"
+            sh "oc patch route/demo -n deploy-master  -p '{\"spec\": {\"to\": {\"name\": \"demo\", \"weight\": 50 }}}'"
+            sh "oc patch route demo -n deploy-master  -p '{\"spec\":{\"alternateBackends\":[{\"kind\":\"Service\", \"name\":\"demo-${env.BUILD_NUMBER}\", \"weight\": 50}]}}'"
+        }
     }
-    
-    stage ("PROD - Canary deploy") {
-        sh "oc new-project deploy-master || echo 'Project exists'"
-        sh "oc project deploy-master"
-        sh "oc set probe dc/demo -n deploy-master --readiness --get-url=http://:8080/api/health"
-        sh "oc patch route/demo -n deploy-master  -p '{\"spec\": {\"to\": {\"name\": \"demo\", \"weight\": 50 }}}'"
-        sh "oc patch route demo -n deploy-master  -p '{\"spec\":{\"alternateBackends\":[{\"kind\":\"Service\", \"name\":\"demo-${env.BUILD_NUMBER}\", \"weight\": 50}]}}'"
-    }
-}
+}    
