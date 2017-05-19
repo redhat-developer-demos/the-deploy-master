@@ -1,4 +1,10 @@
-podTemplate(inheritFrom: "maven", label: "myJenkins", cloud: "openshift", volumes: [persistentVolumeClaim(claimName: "m2repo", mountPath: "/tmp/.m2")]) {
+podTemplate(
+    inheritFrom: "maven", 
+    label: "myJenkins", 
+    cloud: "openshift", 
+    volumes: [
+        persistentVolumeClaim(claimName: "m2repo", mountPath: "/tmp/.m2")
+    ]) {
 
     node("myJenkins") {
     
