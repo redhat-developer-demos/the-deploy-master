@@ -22,12 +22,6 @@ import java.util.Set;
 
 import org.apache.commons.lang3.text.StrSubstitutor;
 import org.infinispan.Cache;
-import org.infinispan.configuration.cache.CacheMode;
-import org.infinispan.configuration.cache.ConfigurationBuilder;
-import org.infinispan.configuration.global.GlobalConfiguration;
-import org.infinispan.configuration.global.GlobalConfigurationBuilder;
-import org.infinispan.manager.DefaultCacheManager;
-import org.infinispan.manager.EmbeddedCacheManager;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpMethod;
@@ -66,7 +60,7 @@ public class HelloworldVerticle extends AbstractVerticle {
 		});
 
 		// Add Stuff
-		router.get("/api/addstuff").blockingHandler(ctx -> {
+		router.get("/api/addstuff").handler(ctx -> {
 			String name = ctx.request().getParam("name");
 			if (name == null) {
 				ctx.response().end("Missing name parameter");
@@ -81,14 +75,14 @@ public class HelloworldVerticle extends AbstractVerticle {
 		});
 
 		// Clear
-		router.get("/api/clearstuff").blockingHandler(ctx -> {
+		router.get("/api/clearstuff").handler(ctx -> {
 			Cache<String, String> cache = CacheInstance.getCache();
 			cache.clear();
 			ctx.response().end("Cleared");
 		});
 
 		// Get Stuff
-		router.get("/api/getstuff").blockingHandler(ctx -> {
+		router.get("/api/getstuff").handler(ctx -> {
 			Cache<String, String> cache = CacheInstance.getCache();
 			StringBuilder sb = new StringBuilder();
 			Set<String> keySet = cache.keySet();
