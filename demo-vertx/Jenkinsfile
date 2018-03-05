@@ -65,7 +65,7 @@ podTemplate(
             sh "oc new-project deploy-master || echo 'Project exists'"
             sh "oc project deploy-master"
             sh "oc set probe dc/demo -n deploy-master --readiness --get-url=http://:8080/api/health"
-            sh "oc patch route/demo -n deploy-master -p '{\"spec\": {\"alternateBackends": [{\"kind\":\"Service\", \"name\": \"demo-${env.BUILD_NUMBER}\", \"weight\": 100 }]}}'"
+            sh "oc patch route/demo -n deploy-master -p '{\"spec\": {\"alternateBackends\": [{\"kind\":\"Service\", \"name\": \"demo-${env.BUILD_NUMBER}\", \"weight\": 100 }]}}'"
         }
     }
 }    
