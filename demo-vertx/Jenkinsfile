@@ -9,7 +9,7 @@ podTemplate(
     node("myJenkins") {
     
         stage("Git Checkout") {
-            echo "Checking out git repository
+            echo "Checking out git repository"
             checkout scm
         }
 
